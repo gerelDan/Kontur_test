@@ -10,14 +10,15 @@ import matplotlib.pyplot as plt
 
 from datetime import datetime
 
+from tokens import *
+
 
 start_date = input('Введите дату (по умолчанию первое число текущего месяца): ')
 if start_date == '':
     now = datetime.now()
     start_date = f'01.{now.month}.{now.year}'
 #Данные для авторизации
-api_key = '73940a2c9b070c3c40e55373a'
-email = 'elain86@mail.ru'
+
 
 auth = (email, api_key)
 #Ссылка для запроса
