@@ -78,6 +78,6 @@ mean_time = df_close_only['closing_speed'].mean()
 """
 bad_appeal = df_close_only[df_close_only['closing_speed'] > mean_time]
 #Отсортируем по двум столбцам важности и скорости закрытия вверху самые важные и долгие
-bad_appeal.sort_values(by=['priority_num', 'closing_speed'], inplace=True, ascending=False)
+bad_appeal = bad_appeal.sort_values(by=['priority_num', 'closing_speed'], ascending=False)
 #Сохраним последний датафрейм в excel
 bad_appeal.to_excel('bad_appeal.xls', sheet_name='bad_appeal', engine='openpyxl')
