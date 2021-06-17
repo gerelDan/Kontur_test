@@ -16,7 +16,7 @@ def take_start_date(attempt: int = 0):
     if start_date_text == '':
         start_date_text = f'01.{now.month}.{now.year}'
     try:
-        datetime.strptime(start_date_text, '%d.%m.%Y')
+        text_date = datetime.strptime(start_date_text, '%d.%m.%Y')
     except ValueError:
         print(f'You must insert date in format dd.mm.YYYY, {5 - attempt} attempt left')
         if attempt > 4:
@@ -24,6 +24,9 @@ def take_start_date(attempt: int = 0):
             exit()
         else:
             start_date_text = take_start_date(attempt)
+    if text_date < datetime.strptime('01.01.2015', '%d.%m.%Y') or text_date > now:
+        print(f'Вы ввели не корректную дату ({start_date_text}), будет назначена дата по умолчанию')
+        start_date_text = f'01.{now.month}.{now.year}'
     return start_date_text
 
 
@@ -89,9 +92,12 @@ def create_hist(dataframe):
 start_date = take_start_date()
 json_obj = get_data(start_date)
 df = create_df(json_obj)
-df = clear_df(df)
-create_hist(df)
-
+try:
+    df = clear_df(df)
+    create_hist(df)
+except KeyError:
+    print('список заявок подходящих вашему запросу пуст')
+    exit()
 """
 Создадим новый датафрейм в котором будут только плохие заявки (время закрытия выше среднего)
 Здесь я выбрал среднее так как у меня было открыто мало заявок и в этом случае это допустимо
