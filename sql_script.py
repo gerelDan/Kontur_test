@@ -4,7 +4,7 @@ import pandas as pd
 
 # Подключаемся к базе данных
 
-#conn = pyodbc.connect(r'Driver={SQL Server};'
+# conn = pyodbc.connect(r'Driver={SQL Server};'
 #                      r'Server=YourServer;' #Введите ваш сервер вместо YourServer
 #                      r'Database=YourDataBase;' #Введите вашу базу вместо YourDatabase
 #                      r'Trusted_Connection=yes;'
@@ -24,9 +24,10 @@ query_open_now = 'select num, bdate, pdate, cid, product, cost, payed, upto, tip
 # определяем время сейчас
 now = datetime.now()
 print(now)
-filter = 'Контур-экстерн'
+filter_sql = 'Контур-экстерн'
+
 # Отправляем запрос
-sql_open_now = cursor.execute(query_open_now, filter, now)
+sql_open_now = cursor.execute(query_open_now, filter_sql, now)
 data_open_now = []
 for i in sql_open_now.fetchall():
     data_open_now.append(list(i))
@@ -36,7 +37,7 @@ query_close_now = 'select num, bdate, pdate, cid, product, cost, payed, upto, ti
             '(retail_packs.bcID = Bill_content.bcID)) AS query_1 ON (query_1.bID = Bills.id)' \
             'where product = ? and upto is not NULL and upto < ?'
 
-sql_close_now = cursor.execute(query_close_now, filter, now)
+sql_close_now = cursor.execute(query_close_now, filter_sql, now)
 # Создадим массив с названием столбцов
 desc = sql_open_now.description
 columns = []
@@ -44,17 +45,14 @@ for row in desc:
     columns.append((row[0]))
 
 # Создадим массив с данными
-
 data_close_now = []
 for i in sql_close_now.fetchall():
     data_close_now.append(list(i))
 
 # С оздадим датафреймы
 df_open_now = pd.DataFrame(data=data_open_now, columns=columns)
-print(df_open_now)
 
 df_close_now = pd.DataFrame(data=data_close_now, columns=columns)
-print(df_close_now)
 
 # Проссумируем стомость поставок по счетам
 df_open_now = df_open_now.groupby(
@@ -66,11 +64,9 @@ df_close_now = df_close_now.groupby(
 df_more_now_grouped = df_open_now.groupby(
     "cid", group_keys=False).apply(lambda x: x.nlargest(1, "upto"))
 df_more_now_grouped = df_more_now_grouped[['cid', 'num', 'bdate', 'pdate', 'cost', 'payed', 'upto']]
-print(df_more_now_grouped)
+
 # Оставим только такие счета где дата оплаты максимальная
 df_less_now_grouped = df_close_now.groupby("cid", group_keys=False).apply(lambda x: x.nlargest(1, "pdate"))
-print(df_less_now_grouped)
-#df_less_now_grouped = df_less_now_grouped[['cid', 'num', 'bdate', 'pdate', 'cost', 'payed', 'upto']]
 
 # соединим две таблицы
 df_all = pd.concat([df_more_now_grouped, df_less_now_grouped], axis=0, ignore_index=True)
@@ -101,7 +97,7 @@ if x.lower() == 'y':
     try:
         cursor.execute('Drop table Result_kontur_ekstern')
         conn.commit()
-    except Exception:
+    except pyodbc.ProgrammingError:
         pass
 
 # Создадим таблицу заново с нужными названиями и форматами
