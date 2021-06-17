@@ -10,9 +10,24 @@ import pandas as pd
 #                      r'Trusted_Connection=yes;'
 #                      )
 
-conn = pyodbc.connect(r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};'
-                      r'DBQ=C:\Users\yermodan\PycharmProjects\Kontur\Database51.accdb;'
-                      )
+def connect_data_base():
+    return pyodbc.connect(r'Driver={Microsoft Access Driver (*.mdb, *.accdb)};'
+                          r'DBQ=C:\Users\yermodan\PycharmProjects\Kontur\Database51.accdb;'
+                          )
+
+def get_table(query, cursor, filter_sql, now):
+    table_from_sql = cursor.execute(query, filter_sql, now)
+    data = []
+    for i in table_from_sql.fetchall():
+        data.append(list(i))
+    desc = table_from_sql.description
+    columns = []
+    for row in desc:
+        columns.append((row[0]))
+    return data, columns
+
+
+conn = connect_data_base()
 cursor = conn.cursor()
 
 # Пишем запрос на соединение всех таблиц
@@ -21,33 +36,19 @@ query_open_now = 'select num, bdate, pdate, cid, product, cost, payed, upto, tip
             '(retail_packs.bcID = Bill_content.bcID)) AS query_1 ON (query_1.bID = Bills.id)' \
             'where product = ? and upto is not NULL and upto >= ?'
 
-# определяем время сейчас
-now = datetime.now()
-print(now)
-filter_sql = 'Контур-экстерн'
-
-# Отправляем запрос
-sql_open_now = cursor.execute(query_open_now, filter_sql, now)
-data_open_now = []
-for i in sql_open_now.fetchall():
-    data_open_now.append(list(i))
-
 query_close_now = 'select num, bdate, pdate, cid, product, cost, payed, upto, tip from Bills LEFT JOIN (select ' \
             'Bill_content.bID, product, cost, payed, upto, tip from Bill_content LEFT JOIN retail_packs ON ' \
             '(retail_packs.bcID = Bill_content.bcID)) AS query_1 ON (query_1.bID = Bills.id)' \
             'where product = ? and upto is not NULL and upto < ?'
 
-sql_close_now = cursor.execute(query_close_now, filter_sql, now)
-# Создадим массив с названием столбцов
-desc = sql_open_now.description
-columns = []
-for row in desc:
-    columns.append((row[0]))
+# определяем время сейчас
+now = datetime.now()
+filter_sql = 'Контур-экстерн'
 
-# Создадим массив с данными
-data_close_now = []
-for i in sql_close_now.fetchall():
-    data_close_now.append(list(i))
+data_open_now = get_table(query_open_now, cursor, filter_sql, now)[0]
+columns = get_table(query_open_now, cursor, filter_sql, now)[1]
+
+data_close_now = get_table(query_close_now, cursor, filter_sql, now)[0]
 
 # С оздадим датафреймы
 df_open_now = pd.DataFrame(data=data_open_now, columns=columns)
@@ -99,6 +100,9 @@ if x.lower() == 'y':
         conn.commit()
     except pyodbc.ProgrammingError:
         pass
+    except pyodbc.Error:
+        print('таблица Result_kontur_ekstern открыта пользователемб закройте таблицу')
+        exit()
 
 # Создадим таблицу заново с нужными названиями и форматами
     create_query = f'create table Result_kontur_ekstern (' \
