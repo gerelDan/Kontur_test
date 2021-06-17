@@ -59,7 +59,7 @@ def clear_df(dataframe):
     """
     dict_priority = {'low': 1, 'normal': 2, 'high': 3, 'critical': 4}
 
-    # пробежимся по всем вариантам важности и заменим их на соответствующие значения из словаря
+    # все значения важности заменим на соответствующие значения из словаря
     close_only['priority'] = close_only['priority'].apply(lambda x: dict_priority.get(x))
     return close_only
 
