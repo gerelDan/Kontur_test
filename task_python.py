@@ -1,7 +1,7 @@
 import requests as req
-import json
 import pandas as pd
 import matplotlib.pyplot as plt
+import json
 from datetime import datetime
 from tokens import *
 
@@ -17,7 +17,7 @@ def take_start_date(attempt: int = 0):
         start_date_text = f'01.{now.month}.{now.year}'
     try:
         datetime.strptime(start_date_text, '%d.%m.%Y')
-    except Exception:
+    except ValueError:
         print(f'You must insert date in format dd.mm.YYYY, {5 - attempt} attempt left')
         if attempt > 4:
             print('attempts ended the program closes')
@@ -32,7 +32,7 @@ def get_data(filter_date: str):
     :param filter_date: start date filter
     :return: dictionary
     """
-    # Данные для запроса и авторизацииавторизации
+    # Данные для запроса и авторизации
     auth = (email, api_key)
     url = f'https://mycompany.omnidesk.ru/api/cases.json?from_time={filter_date}'
     headers = {'Content-Type': 'application/json'}
@@ -46,7 +46,7 @@ def get_data(filter_date: str):
 def clear_df(dataframe):
     """
     :param dataframe: dirty dataframe
-    :return: clear dataframe
+    :return: clear dataframe without open applications, with integer in closing speed and with integer in priority
     """
     # Убираем открытые заявки они для анализа в текущий момент не нужны
     close_only = dataframe[dataframe['closing_speed'] != '-']
@@ -67,7 +67,7 @@ def clear_df(dataframe):
 def create_df(dictionary: dict):
     """
     :param dictionary: dictionary from json object
-    :return:
+    :return: dataframe
     """
     dataframe = pd.DataFrame()
     for i in range(dictionary['total_count']):
@@ -76,17 +76,21 @@ def create_df(dictionary: dict):
     return dataframe
 
 
+def create_hist(dataframe):
+    """
+    :param dataframe:
+    :return: closing_speed histogram
+    """
+    dataframe['closing_speed'].hist(bins=10)
+    plt.savefig('fig2.png')
+    plt.show()
+
+
 start_date = take_start_date()
 json_obj = get_data(start_date)
-
 df = create_df(json_obj)
-
 df = clear_df(df)
-
-# Зададим гистограмму
-df['closing_speed'].hist(bins=10)
-plt.savefig('fig2.png')
-plt.show()
+create_hist(df)
 
 """
 Создадим новый датафрейм в котором будут только плохие заявки (время закрытия выше среднего)
